@@ -3,4 +3,4 @@ project(forgemush)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(forgemush main.cpp genarena.cpp genarena.h typedefs.h)
+add_executable(forgemush main.cpp)

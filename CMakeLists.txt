@@ -3,4 +3,8 @@ project(forgemush)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(forgemush main.cpp)
+include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+conan_basic_setup()
+
+add_subdirectory(apps)
+add_subdirectory(src)

@@ -1,0 +1,10 @@
+add_executable(forgemush mush.cpp)
+set_property(TARGET forgemush PROPERTY ENABLE_EXPORTS)
+add_dependencies(forgemush libforgemush)
+target_include_directories(forgemush PUBLIC ../include)
+target_link_libraries(forgemush ${CONAN_LIBS})
+
+add_executable(forgeportal portal.cpp)
+#add_dependencies(forgeportal libforgeportal)
+target_include_directories(forgeportal PUBLIC ../include)
+target_link_libraries(forgeportal ${CONAN_LIBS})

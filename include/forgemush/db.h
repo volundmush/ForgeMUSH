@@ -13,9 +13,8 @@
 class DbObjManager;
 
 enum DbRefType : uint8_t {
-    Null = 0,
-    Number = 1,
-    Name = 2
+    Number = 0,
+    Name = 1
 };
 
 struct NumDbRef {
@@ -53,7 +52,7 @@ enum ObjType : uint8_t {
 };
 
 struct ObjRel {
-    DbRef ref, *pref;
+    std::optional<DbRef> ref;
     std::unordered_set<DbRef> reverse;
 };
 

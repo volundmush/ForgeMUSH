@@ -35,7 +35,7 @@ namespace forgemush::utils::genarena {
         std::vector<GenEntry<T>> storage;
         std::list<size_t> garbage;
         GenIndex insert(T value);
-        T* get(GenIndex idx);
+        std::optional<T*> get(GenIndex idx);
         bool remove(GenIndex idx);
         bool has(GenIndex idx);
         bool available();

@@ -17,7 +17,7 @@ namespace forgemush::utils::genarena {
     }
 
     template<typename T>
-    T* GenBank<T>::get(GenIndex idx) {
+    std::optional<T*> GenBank<T>::get(GenIndex idx) {
 
     }
 

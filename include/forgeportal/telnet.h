@@ -6,7 +6,7 @@
 #define FORGEMUSH_TELNET_H
 
 #include <cstdint>
-#include "forgenet/net.h"
+#include "net.h"
 
 namespace forgeportal::telnet {
 
@@ -54,7 +54,7 @@ namespace forgeportal::telnet {
 
     };
 
-    class TelnetProtocol : forgeportal::net::Protocol {
+    class TelnetProtocol : public forgeportal::net::Protocol {
 
     };
 

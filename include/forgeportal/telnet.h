@@ -113,12 +113,13 @@ namespace forgeportal::telnet {
         void onLost() override;
         void onConnect() override;
         void addHandler(TelnetOption* handler);
+        void setConnection(Connection *c) override;
         HandshakeHolder handshake_local, handshake_remote, handshake_special;
         void sendNegotiate(TelnetCode command, uint8_t option);
         bool handshaken = false;
         void checkReady(), start();
     private:
-        std::vector<uint8_t> app_buffer, sub_buffer;
+        boost::asio::streambuf app_buffer;
         uint32_t overflow_counter = 0;
         TelnetState state = TelnetState::Data;
         std::unordered_map<uint8_t, TelnetOption*> handlers;

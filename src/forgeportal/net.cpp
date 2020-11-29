@@ -88,8 +88,7 @@ namespace forgeportal::net {
     }
 
     void TCPConnection::receive() {
-        peer.async_read_some(boost::asio::buffer(read_buffer.data(), read_buffer.capacity()),
-                             [&](std::error_code ec, std::size_t length) {
+        peer.async_read_some(inbox, [&](std::error_code ec, std::size_t length) {
             if(!ec) {
                 std::cout << "Got some bytes: " << length << std::endl << std::flush;
                 if(prot) prot->onReceiveData(read_buffer, length);
@@ -102,8 +101,7 @@ namespace forgeportal::net {
     }
 
     void TLSConnection::receive() {
-        peer.async_read_some(boost::asio::buffer(read_buffer.data(), read_buffer.capacity()),
-                             [&](std::error_code ec, std::size_t length){
+        peer.async_read_some(inbox, [&](std::error_code ec, std::size_t length){
              if(!ec) {
                  std::cout << "Got some bytes: " << length << std::endl;
                  if(prot) prot->onReceiveData(read_buffer, length);

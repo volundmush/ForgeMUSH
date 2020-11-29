@@ -30,7 +30,7 @@ namespace forgeportal::net {
     class Protocol {
     public:
         Protocol(boost::asio::io_context& con);
-        void setConnection(Connection *c);
+        virtual void setConnection(Connection *c);
         virtual void onReceiveData(std::vector<uint8_t>& data, size_t length) = 0;
         virtual void onClose() = 0;
         virtual void onLost() = 0;
@@ -60,7 +60,7 @@ namespace forgeportal::net {
         Server &server;
         ServerManager& srv_manager;
         ConnectionManager& conn_manager;
-        boost::asio::streambuf outbox;
+        boost::asio::streambuf inbox, outbox;
     protected:
         Protocol *prot = nullptr;
         bool isWriting = false;

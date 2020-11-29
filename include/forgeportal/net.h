@@ -8,6 +8,7 @@
 #include <string>
 #include <unordered_map>
 #include <cstdint>
+#include <list>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 
@@ -28,28 +29,27 @@ namespace forgeportal::net {
 
     class Protocol {
     public:
-        Protocol();
+        Protocol(boost::asio::io_context& con);
         void setConnection(Connection *c);
         virtual void onReceiveData(std::vector<uint8_t>& data, size_t length) = 0;
         virtual void onClose() = 0;
         virtual void onLost() = 0;
         virtual void onConnect() = 0;
-    private:
-        Connection *conn;
+    protected:
+        Connection *conn = nullptr;
     };
     
     class Connection {
     public:
         Connection(Server& sr);
         virtual void receive() = 0;
-        virtual void send() = 0;
+        virtual void sendData() = 0;
         virtual void disconnect() = 0;
         void onReceiveData(std::vector<uint8_t> data, size_t length);
         void onClose();
         void onLost();
         virtual void onConnect() = 0;
         void setProtocol(Protocol *p);
-        void sendData(std::vector<uint8_t> data, size_t length);
         virtual bool isSSL() = 0;
         virtual boost::asio::ip::tcp::socket &getSocket() = 0;
         void makeProtocol();
@@ -60,18 +60,21 @@ namespace forgeportal::net {
         Server &server;
         ServerManager& srv_manager;
         ConnectionManager& conn_manager;
+        boost::asio::streambuf outbox;
     protected:
         Protocol *prot = nullptr;
+        bool isWriting = false;
+
     };
 
     class TCPConnection : public Connection {
     public:
         TCPConnection(Server& sr);
-        virtual void receive();
-        virtual void send();
-        virtual void onConnect();
-        virtual bool isSSL();
-        virtual void disconnect();
+        void receive() override;
+        void sendData() override;
+        void onConnect() override;
+        bool isSSL() override;
+        void disconnect() override;
         virtual boost::asio::ip::tcp::socket &getSocket();
         boost::asio::ip::tcp::socket peer;
     };
@@ -79,11 +82,11 @@ namespace forgeportal::net {
     class TLSConnection : public Connection {
     public:
         TLSConnection(Server& sr);
-        virtual void receive();
-        virtual void send();
-        virtual void onConnect();
-        virtual bool isSSL();
-        virtual void disconnect();
+        void receive() override;
+        void sendData() override;
+        void onConnect() override;
+        bool isSSL() override;
+        void disconnect() override;
         virtual boost::asio::ip::tcp::socket &getSocket();
         boost::asio::ssl::stream<boost::asio::ip::tcp::socket> peer;
     };

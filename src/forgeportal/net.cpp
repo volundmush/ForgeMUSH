@@ -8,6 +8,8 @@
 
 namespace forgeportal::net {
 
+    Protocol::Protocol(boost::asio::io_context& con) {}
+
     void Protocol::setConnection(Connection *c) {
 
     }
@@ -50,16 +52,39 @@ namespace forgeportal::net {
     void TCPConnection::onConnect() {
         makeProtocol();
         if(prot) prot->onConnect();
-        read_buffer.reserve(1024);
         receive();
     }
 
-    void TCPConnection::send() {
-
+    void TCPConnection::sendData() {
+        if(outbox.size() == 0) {
+            isWriting = false;
+        } else {
+            isWriting = true;
+            peer.async_write_some(outbox, [&](std::error_code ec, std::size_t len){
+                outbox.consume(len);
+                if(outbox.size() > 0) {
+                    sendData();
+                } else {
+                    isWriting = false;
+                }
+            });
+        }
     }
 
-    void TLSConnection::send() {
-
+    void TLSConnection::sendData() {
+        if(outbox.size() == 0) {
+            isWriting = false;
+        } else {
+            isWriting = true;
+            peer.async_write_some(outbox, [&](std::error_code ec, std::size_t len){
+                outbox.consume(len);
+                if(outbox.size() > 0) {
+                    sendData();
+                } else {
+                    isWriting = false;
+                }
+            });
+        }
     }
 
     void TCPConnection::receive() {

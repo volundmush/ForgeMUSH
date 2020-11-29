@@ -1,5 +1,6 @@
 #include <iostream>
 #include "forgeportal/net.h"
+#include "forgeportal/telnet.h"
 
 int main() {
     boost::asio::io_context con;

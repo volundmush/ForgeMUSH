@@ -6,12 +6,16 @@
 #define FORGEMUSH_TELNET_H
 
 #include <cstdint>
-#include "net.h"
+#include <unordered_set>
+#include <unordered_map>
+#include "forgeportal/net.h"
 
 namespace forgeportal::telnet {
+    class TelnetProtocol;
+    class TelnetOption;
 
     enum TelnetCode : uint8_t {
-        NULL = 0,
+        NUL = 0,
         BEL = 7,
         CR = 13,
         LF = 10,
@@ -40,6 +44,7 @@ namespace forgeportal::telnet {
         MSSP = 70,
 
         // MCCP#: Mud Client Compression Protocol
+        // Not gonna support these.
         MCCP2 = 86,
         MCCP3 = 87,
 
@@ -54,8 +59,70 @@ namespace forgeportal::telnet {
 
     };
 
-    class TelnetProtocol : public forgeportal::net::Protocol {
+    enum TelnetState : uint8_t {
+        Data = 0,
+        Escaped = 1,
+        Negotiating = 2,
+        Subnegotiating = 3,
+        Subescaped = 4,
+        Endline = 5
+    };
 
+    struct TelnetOptionPerspective {
+        bool enabled = false, negotiating = false, answered = false;
+    };
+
+    struct TelnetOptionState {
+        TelnetOptionPerspective local, remote;
+    };
+
+    class TelnetOption {
+    public:
+        virtual TelnetCode opCode() = 0;
+        virtual bool startWill(), startDo(), supportLocal(), supportRemote();
+        virtual void registerHandshake();
+        virtual void onConnect(), enableLocal(), enableRemote(), disableLocal(), disableRemote();
+        void negotiate(TelnetCode command);
+        void receiveNegotiate(TelnetCode command);
+        virtual void rejectLocalHandshake(), acceptLocalHandshake(), rejectRemoteHandshake(), acceptRemoteHandshake();
+        TelnetOptionState state;
+        TelnetProtocol *protocol = nullptr;
+    };
+
+    class MXPOption : public TelnetOption {
+    public:
+        TelnetCode opCode() override;
+    };
+
+    class HandshakeHolder {
+    public:
+        HandshakeHolder(TelnetProtocol *p);
+        std::unordered_set<TelnetCode> handshakes;
+        void registerHandshake(TelnetCode code);
+        void processHandshake(TelnetCode code);
+        bool empty();
+    private:
+        TelnetProtocol *protocol = nullptr;
+    };
+
+    class TelnetProtocol : public forgeportal::net::Protocol {
+    public:
+        TelnetProtocol(boost::asio::io_context& con);
+        void onReceiveData(std::vector<uint8_t>& data, size_t length) override;
+        void onClose() override;
+        void onLost() override;
+        void onConnect() override;
+        void addHandler(TelnetOption* handler);
+        HandshakeHolder handshake_local, handshake_remote, handshake_special;
+        void sendNegotiate(TelnetCode command, uint8_t option);
+        bool handshaken = false;
+        void checkReady(), start();
+    private:
+        std::vector<uint8_t> app_buffer, sub_buffer;
+        uint32_t overflow_counter = 0;
+        TelnetState state = TelnetState::Data;
+        std::unordered_map<uint8_t, TelnetOption*> handlers;
+        boost::asio::high_resolution_timer timer;
     };
 
 }

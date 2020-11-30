@@ -18,7 +18,9 @@
 namespace forgeportal::net {
     class NetworkManager;
     class ServerManager;
+    class ClientManager;
     class ConnectionManager;
+    class Client;
     class Server;
     class Connection;
     class Protocol;
@@ -100,7 +102,7 @@ namespace forgeportal::net {
 
     class Server {
     public:
-        Server(ServerManager& manager, std::string name, ProtocolType prot, boost::asio::ip::address address, uint16_t port,
+        Server(ServerManager& manager, std::string name, ProtocolFactory prot_fac, boost::asio::ip::address addr, uint16_t port,
                std::optional<boost::asio::ssl::context*> ssl_context);
         void listen();
         void start();
@@ -111,8 +113,8 @@ namespace forgeportal::net {
         std::optional<boost::asio::ssl::context*> ssl_con;
         bool running;
         std::string name;
-        ProtocolType prot_type;
-        boost::asio::ip::address addr;
+        ProtocolFactory prot_factory;
+        boost::asio::ip::address address;
         uint16_t port;
     private:
         boost::asio::ip::tcp::acceptor acceptor;
@@ -129,12 +131,27 @@ namespace forgeportal::net {
     class ServerManager {
     public:
         ServerManager(NetworkManager &net_man);
+        void createServer(std::string name, std::string address, uint16_t port, std::string protocol_name, std::optional<std::string> ssl_name);
+        NetworkManager &network_manager;
+        boost::asio::io_context& context;
+        void start();
+        void stop();
+    private:
+        std::unordered_map<std::string, Server*> servers;
+    };
+
+    class ClientManager {
+    public:
+        ClientManager(NetworkManager &net_man);
+        void start();
+        void stop();
+        NetworkManager &network_manager;
+        boost::asio::io_context& context;
     };
 
     class NetworkManager {
     public:
         NetworkManager(boost::asio::io_context& io_con, ConnectionManager& conn_man);
-        void createServer(std::string name, std::string address, uint16_t port, std::string protocol_name, std::optional<std::string> ssl_name);
         void registerSSL(std::string name);
         void registerAddress(std::string name, std::string addr);
         void registerProtocol(std::string name, ProtocolFactory prot);
@@ -142,8 +159,8 @@ namespace forgeportal::net {
         void stop();
         boost::asio::io_context& context;
         ServerManager& server_manager;
+        ClientManager& client_manager;
     private:
-        std::unordered_map<std::string, Server*> servers;
         std::unordered_map<std::string, boost::asio::ip::address> addresses;
         std::unordered_map<std::string, boost::asio::ssl::context*> ssl_contexts;
         std::unordered_map<std::string, ProtocolFactory> protocols;

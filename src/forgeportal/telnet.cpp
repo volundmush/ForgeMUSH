@@ -136,6 +136,10 @@ namespace forgeportal::telnet {
 
     bool HandshakeHolder::empty() {return handshakes.empty();}
 
+    void TelnetProtocol::setConnection(net::Connection *c) {
+        conn = c;
+    }
+
     void TelnetProtocol::addHandler(TelnetOption *handler) {
         handlers[handler->opCode()] = handler;
         handler->protocol = this;

@@ -10,11 +10,14 @@ namespace forgeportal::net {
 
     Protocol::Protocol(boost::asio::io_context& con) {}
 
+    Protocol::~Protocol() {};
+
     void Protocol::setConnection(Connection *c) {
 
     }
 
-    Connection::Connection(Server &sr) : server(sr), context(sr.context), srv_manager(sr.srv_manager), conn_manager(sr.conn_manager) {}
+    Connection::Connection(Server &sr) : server(sr), context(sr.context), srv_manager(sr.srv_manager), conn_manager(sr.conn_manager), inv(1024), outv(1024) {}
+    Connection::~Connection() {};
     TCPConnection::TCPConnection(Server &sr) : Connection(sr), peer(sr.context) {}
     TLSConnection::TLSConnection(Server &sr) : Connection(sr), peer(sr.context, *sr.ssl_con.value()) {}
     boost::asio::ip::tcp::socket & TCPConnection::getSocket() {return peer;}
@@ -60,7 +63,7 @@ namespace forgeportal::net {
             isWriting = false;
         } else {
             isWriting = true;
-            peer.async_write_some(outbox, [&](std::error_code ec, std::size_t len){
+            peer.async_write_some(outbox.data(), [&](std::error_code ec, std::size_t len){
                 outbox.consume(len);
                 if(outbox.size() > 0) {
                     sendData();
@@ -76,7 +79,7 @@ namespace forgeportal::net {
             isWriting = false;
         } else {
             isWriting = true;
-            peer.async_write_some(outbox, [&](std::error_code ec, std::size_t len){
+            peer.async_write_some(outbox.data(), [&](std::error_code ec, std::size_t len){
                 outbox.consume(len);
                 if(outbox.size() > 0) {
                     sendData();
@@ -88,10 +91,12 @@ namespace forgeportal::net {
     }
 
     void TCPConnection::receive() {
-        peer.async_read_some(inbox, [&](std::error_code ec, std::size_t length) {
+        auto x = inbox.prepare(1024);
+        peer.async_read_some(x, [&](std::error_code ec, std::size_t length) {
             if(!ec) {
                 std::cout << "Got some bytes: " << length << std::endl << std::flush;
-                if(prot) prot->onReceiveData(read_buffer, length);
+                inbox.commit(length);
+                if(prot) prot->onReceiveData(inbox);
                 receive();
             } else
             {
@@ -101,13 +106,15 @@ namespace forgeportal::net {
     }
 
     void TLSConnection::receive() {
-        peer.async_read_some(inbox, [&](std::error_code ec, std::size_t length){
-             if(!ec) {
-                 std::cout << "Got some bytes: " << length << std::endl;
-                 if(prot) prot->onReceiveData(read_buffer, length);
-                 receive();
-             }
-         });
+        auto x = inbox.prepare(1024);
+        peer.async_read_some(x, [&](std::error_code ec, std::size_t length){
+            if(!ec) {
+                std::cout << "Got some bytes: " << length << std::endl;
+                inbox.commit(length);
+                if(prot) prot->onReceiveData(inbox);
+                receive();
+            }
+        });
     }
 
 

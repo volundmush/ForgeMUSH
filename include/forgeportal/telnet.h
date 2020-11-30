@@ -107,13 +107,13 @@ namespace forgeportal::telnet {
 
     class TelnetProtocol : public forgeportal::net::Protocol {
     public:
-        TelnetProtocol(boost::asio::io_context& con);
-        void onReceiveData(std::vector<uint8_t>& data, size_t length) override;
+        explicit TelnetProtocol(boost::asio::io_context& con);
+        void onReceiveData(boost::asio::streambuf& data) override;
         void onClose() override;
         void onLost() override;
         void onConnect() override;
         void addHandler(TelnetOption* handler);
-        void setConnection(Connection *c) override;
+        void setConnection(net::Connection *c) override;
         HandshakeHolder handshake_local, handshake_remote, handshake_special;
         void sendNegotiate(TelnetCode command, uint8_t option);
         bool handshaken = false;

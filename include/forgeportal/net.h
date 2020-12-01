@@ -22,15 +22,19 @@ namespace forgeportal::net {
     class ConnectionManager;
     class Client;
     class Server;
+    class Message;
+    class Codec;
     class Connection;
     class Protocol;
     class TCPConnection;
     class TLSConnection;
 
-    typedef Protocol*(*make_protocol_fn)();
+    typedef Protocol*(*make_protocol_fn)(boost::asio::io_context& con);
+    typedef Codec*(*make_codec_fn)(boost::asio::io_context& con);
 
     struct ProtocolFactory {
-        make_protocol_fn create;
+        make_protocol_fn create_protocol;
+        make_codec_fn create_codec;
         std::string name;
     };
 
@@ -39,14 +43,30 @@ namespace forgeportal::net {
         explicit Protocol(boost::asio::io_context& con);
         virtual ~Protocol();
         virtual void setConnection(Connection *c);
-        virtual void onReceiveData(boost::asio::streambuf& data) = 0;
         virtual void onClose() = 0;
         virtual void onLost() = 0;
         virtual void onConnect() = 0;
+        virtual void receiveFromCodec(Message *msg) = 0;
     protected:
         Connection *conn = nullptr;
     };
-    
+
+    class Message {
+    public:
+        virtual ~Message();
+    };
+
+    class Codec {
+    public:
+        explicit Codec(boost::asio::io_context& con);
+        virtual ~Codec();
+        virtual void setConnection(Connection *c);
+        virtual void onReceiveData() = 0;
+        virtual void receiveFromProtocol(Message *msg) = 0;
+    protected:
+        Connection *conn = nullptr;
+    };
+
     class Connection {
     public:
         explicit Connection(Server& sr);
@@ -70,8 +90,9 @@ namespace forgeportal::net {
         boost::asio::streambuf inbox, outbox;
         std::vector<uint8_t> outv, inv;
         bool active = false;
-    protected:
         Protocol *prot = nullptr;
+        Codec *codec = nullptr;
+    protected:
         bool isWriting = false;
 
     };

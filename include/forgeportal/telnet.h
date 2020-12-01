@@ -13,6 +13,7 @@
 namespace forgeportal::telnet {
     class TelnetProtocol;
     class TelnetOption;
+    class TelnetCodec;
 
     enum TelnetCode : uint8_t {
         NUL = 0,
@@ -58,6 +59,30 @@ namespace forgeportal::telnet {
         TTYPE = 24
 
     };
+
+    enum TelnetMsgType : uint8_t {
+        AppData = 0,
+        Command = 1,
+        Negotiation = 2,
+        Subnegotiation = 3
+    };
+
+    class TelnetMessage : public net::Message {
+    public:
+        TelnetMsgType msg_type;
+        std::vector<uint8_t> data;
+        uint8_t codes[2];
+    };
+
+
+    class TelnetCodec : public net::Codec {
+    public:
+        void onReceiveData() override;
+        void receiveFromProtocol(net::Message *msg) override;
+
+    };
+
+
 
     enum TelnetState : uint8_t {
         Data = 0,

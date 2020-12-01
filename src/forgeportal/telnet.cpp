@@ -5,6 +5,113 @@
 #include "forgeportal/telnet.h"
 
 namespace forgeportal::telnet {
+
+    void TelnetCodec::onReceiveData() {
+
+        while(conn->inbox.size() > 0) {
+            auto box = conn->inbox.data();
+            auto available = conn->inbox.size();
+            auto begin = boost::asio::buffers_begin(box), end = boost::asio::buffers_end(box);
+            // first, we read ahead
+            if((uint8_t)*begin == (uint8_t)TelnetCode::IAC) {
+                if(available < 2) {
+                    // not enough bytes available - do nothing;
+                    return;
+                } else {
+                    // we have 2 or more bytes!
+                    auto b = begin;
+                    b++;
+                    if((uint8_t)*b == (uint8_t)TelnetCode::IAC) {
+                        // this is an escaped IAC.
+                        auto t = new TelnetMessage;
+                        t->msg_type = TelnetMsgType::AppData;
+                        t->data.push_back(TelnetCode::IAC);
+                        conn->prot->receiveFromCodec(t);
+                        conn->inbox.consume(2);
+                        continue;
+                    } else {
+                        // It's not an escaped IAC...
+                        if(((uint8_t)*b == (uint8_t)TelnetCode::WILL) ||
+                            ((uint8_t)*b == (uint8_t)TelnetCode::WONT) ||
+                            ((uint8_t)*b == (uint8_t)TelnetCode::DO) ||
+                            ((uint8_t)*b == (uint8_t)TelnetCode::DONT)) {
+                            if(conn->inbox.size() > 2) {
+                                // IAC negotiation received.
+                                auto t = new TelnetMessage;
+                                t->msg_type = TelnetMsgType::Negotiation;
+                                t->codes[0] = (uint8_t)*b;
+                                t->codes[1] = (uint8_t)*(++b);
+                                conn->prot->receiveFromCodec(t);
+                                conn->inbox.consume(3);
+                                continue;
+                            } else {
+                                // It's negotiation, but we need more data.
+                                return;
+                            }
+                        } else {
+                            // It's not a negotiation, so it's either a subnegotiation or a command.
+                            if((uint8_t)*b == (uint8_t)TelnetCode::SB) {
+                                // This is a subnegotiation. we will require at least 5 bytes for this to be usable.
+                                if(conn->inbox.size() >= 5) {
+                                    uint8_t option = *(++b);
+                                    auto sub = ++b;
+                                    // we must seek ahead until we have an unescaped IAC SE. If we don't have one, do nothing.
+                                    bool escaped = false, match1 = false, match2 = false;
+                                    while(b != end) {
+                                        switch((uint8_t)*b) {
+                                            case TelnetCode::IAC:
+                                                if(match1) {
+                                                    escaped = true;
+                                                    match1 = false;
+                                                } else {
+                                                    match1 = true;
+                                                }
+                                                break;
+                                            case TelnetCode::SB:
+                                                if(match1) {
+                                                    match2 = true;
+                                                }
+                                                // we have a winner!;
+                                                b--;
+                                                auto t = new TelnetMessage;
+                                                t->msg_type = TelnetMsgType::Subnegotiation;
+                                                t->codes[0] = option;
+                                                std::copy(sub, b, t->data.begin());
+                                                conn->inbox.consume(5 + t->data.size());
+                                                conn->prot->receiveFromCodec(t);
+                                        }
+                                    }
+                                } else {
+                                    // Not enough data. wait for more.
+                                    return;
+                                }
+                            } else {
+                                // Yeah, it's a command...
+                                auto t = new TelnetMessage;
+                                t->msg_type = TelnetMsgType::Command;
+                                t->codes[0] = (uint8_t)*b;
+                                conn->prot->receiveFromCodec(t);
+                                conn->inbox.consume(2);
+                                continue;
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Data begins on something that isn't an IAC. Scan ahead until we reach one...
+                // Send all data up to an IAC, or everything if there is no IAC, as data.
+
+                auto t = new TelnetMessage;
+                t->msg_type = TelnetMsgType::AppData;
+                auto check = std::find(begin, end, TelnetCode::IAC);
+                std::copy(begin, check, t->data.begin());
+                conn->inbox.consume(t->data.size());
+                conn->prot->receiveFromCodec(t);
+                continue;
+            }
+        }
+    }
+
     void TelnetOption::registerHandshake() {
         if(supportLocal() && startDo()) {
             protocol->handshake_local.registerHandshake(opCode());

@@ -1,4 +1,4 @@
-add_library(forgemushcore forgemush/ansi.cpp forgemush/genarena.cpp forgemush/interner.cpp)
+add_library(forgemushcore forgemush/markup.cpp)
 target_include_directories(forgemushcore PUBLIC ../include ${CONAN_INCLUDE_DIRS})
 target_link_libraries(forgemushcore ${CONAN_LIBS})
 

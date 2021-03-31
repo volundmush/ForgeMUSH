@@ -1,6 +1,7 @@
 [requires]
-boost/1.74.0
-openssl/1.1.1i
+sqlite3/3.34.0
+qt/6.0.1@bincrafters/stable
+entt/3.6.0
 
 [generators]
 cmake

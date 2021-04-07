@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup()
+#include_directories(../include ${CONAN_INCLUDE_DIRS})
 
 find_package(Threads REQUIRED)
 find_package(OpenSSL REQUIRED)

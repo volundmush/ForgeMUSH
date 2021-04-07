@@ -82,8 +82,6 @@ namespace forgeportal::telnet {
 
     };
 
-
-
     enum TelnetState : uint8_t {
         Data = 0,
         Escaped = 1,
@@ -97,10 +95,6 @@ namespace forgeportal::telnet {
         bool enabled = false, negotiating = false, answered = false;
     };
 
-    struct TelnetOptionState {
-        TelnetOptionPerspective local, remote;
-    };
-
     class TelnetOption {
     public:
         virtual TelnetCode opCode() = 0;
@@ -110,7 +104,7 @@ namespace forgeportal::telnet {
         void negotiate(TelnetCode command);
         void receiveNegotiate(TelnetCode command);
         virtual void rejectLocalHandshake(), acceptLocalHandshake(), rejectRemoteHandshake(), acceptRemoteHandshake();
-        TelnetOptionState state;
+        TelnetOptionPerspective local, remote;
         TelnetProtocol *protocol = nullptr;
     };
 

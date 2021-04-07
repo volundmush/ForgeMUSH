@@ -1,7 +1,5 @@
 [requires]
-sqlite3/3.34.0
-qt/6.0.1@bincrafters/stable
-entt/3.6.0
+boost/1.75.0
 
 [generators]
 cmake

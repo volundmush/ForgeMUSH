@@ -2,11 +2,10 @@
 // Created by volund on 10/29/20.
 //
 
-#include "forgemush/markup.h"
+#include "mudcore/markup.h"
 
 
-
-namespace markup {
+namespace mudcore::markup {
 
     bool AnsiGround::process(std::string &mode, std::smatch &sm, bool background) {
         if(mode == "numbers") {
@@ -165,6 +164,11 @@ namespace markup {
         }
     }
 
+    bool MarkupString::decode_markup(const char *src) {
+        auto s = std::string(src);
+        return decode_markup(s);
+    }
+
     bool MarkupString::decode_markup(std::string &src) {
         if(!idx.empty()) {
             idx.clear();
@@ -254,11 +258,46 @@ namespace markup {
         return clone += other;
     }
 
+    MarkupString MarkupString::operator+(const char *other) {
+        auto clone = MarkupString(*this);
+        auto s = std::string(other);
+        return clone += s;
+    }
+
+    MarkupString MarkupString::operator+(const char other) {
+        auto clone = MarkupString(*this);
+        return clone += other;
+    }
+
+    MarkupString MarkupString::operator+(const std::string &other) {
+        auto clone = MarkupString(*this);
+        return clone += other;
+    }
+
     MarkupString &MarkupString::operator+=(const MarkupString &other) {
         text += other.text;
         source += other.source;
         markup.insert(markup.end(), other.markup.begin(), other.markup.end());
         idx.insert(idx.end(), other.idx.begin(), other.idx.end());
+        return *this;
+    }
+
+    MarkupString& MarkupString::operator+=(const char *other) {
+        auto s = std::string(other);
+        return *this += s;
+    }
+
+    MarkupString& MarkupString::operator+=(const std::string &other) {
+        for(auto c : other) {
+            this->idx.emplace_back(OpMarkup(), c);
+        }
+        this->text += other;
+        return *this;
+    }
+
+    MarkupString& MarkupString::operator+=(const char other) {
+        this->idx.emplace_back(OpMarkup(), other);
+        this->text.push_back(other);
         return *this;
     }
 
@@ -276,4 +315,54 @@ namespace markup {
         }
         return ansi_codes;
     }
+
+    size_t MarkupString::size() const {
+        return this->text.size();
+    }
+
+    size_t MarkupString::length() const {
+        return this->text.length();
+    }
+
+    size_t MarkupString::max_size() const {
+        return this->text.max_size();
+    }
+
+    void MarkupString::clear() {
+        this->text.clear();
+        this->source.clear();
+        this->markup.clear();
+        this->idx.clear();
+    }
+
+    bool MarkupString::empty() const {
+        return this->text.empty();
+    }
+
+    char& MarkupString::operator[](size_t pos) {
+        return this->text[pos];
+    }
+
+    const char& MarkupString::operator[](size_t pos) const {
+        return this->text[pos];
+    }
+
+    const char& MarkupString::front() const {
+        return this->text.front();
+    }
+
+    const char& MarkupString::back() const {
+        return this->text.back();
+    }
+
+    const char& MarkupString::at(size_t pos) const {
+        return this->text.at(pos);
+    }
+
+    void MarkupString::push_back(char c) {
+        *this += c;
+    }
+
+
+
 }
